@@ -158,3 +158,9 @@ This makes arbitrary component lookup best-effort without pretending there is a 
 ## Notes
 
 The Gerber parser is a practical prototype parser, not a certified CAM validation tool. It extracts measurable features from common RS-274X and Excellon text files and reports warnings when data is missing. This is intentional: the tool should be honest about uncertainty instead of faking design intelligence.
+
+
+## Fast Mode Changes
+- Removed Playwright from default dependencies.
+- Removed Plotly from default dependencies.
+- Intended for cached/offline supplier enrichment and coursework demos.
