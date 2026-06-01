@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import json
@@ -44,6 +43,9 @@ st.caption(
     "Analyze BoM sustainability, PCB image/layout complexity, Robu.in availability, and end-of-life recovery in one fast demo workflow."
 )
 
+# Define an absolute cache path so the UI and Scraper look at the exact same folder
+ROBU_CACHE_PATH = ROOT / ".cache" / "robu_results.json"
+
 with st.sidebar:
     st.header("Inputs")
     bom_file = st.file_uploader("BoM file", type=["csv", "xlsx", "xls", "json"])
@@ -51,11 +53,12 @@ with st.sidebar:
     st.divider()
     online_robu = st.toggle("Enable live Robu.in lookup", value=False)
     enrich_limit = st.number_input("Robu lookup row limit", min_value=1, max_value=100, value=20)
+    
     if st.button("Clear Robu lookup cache", use_container_width=True):
-        cache_path = ROOT / ".cache" / "robu_results.json"
-        if cache_path.exists():
-            cache_path.unlink()
+        if ROBU_CACHE_PATH.exists():
+            ROBU_CACHE_PATH.unlink()
         st.success("Robu lookup cache cleared.")
+        
     if not online_robu:
         st.info("Live Robu lookup is off. Availability and price will use offline fallback data.")
     st.divider()
@@ -107,7 +110,9 @@ with st.spinner("Analyzing PCB image and scoring sustainability..."):
 
     pcb_features = merge_manual_features(pcb_features, manual)
 
-    client = RobuClient(browser_fallback=False)
+    # FIX: Explicitly pass synchronized cache path, and remove the non-existent browser_fallback argument
+    client = RobuClient(cache_path=ROBU_CACHE_PATH)
+    
     enrichments = client.enrich_bom(bom_df, enabled=online_robu, limit=int(enrich_limit))
     component_scores, bom_summary = score_bom(bom_df, enrichments)
     ml_error = None
@@ -132,62 +137,4 @@ top_cols = st.columns(3)
 with top_cols[0]:
     score_block("BoM Sustainability", bom_summary["summary_score"])
 with top_cols[1]:
-    score_block("PCB Image / Layout Score", pcb_score.score)
-with top_cols[2]:
-    score_block("Final Recyclability", recovery.final_score)
-
-if pcb_image:
-    st.subheader("PCB Image Preview")
-    st.image(pcb_image, use_container_width=True)
-
-st.subheader("Component Sustainability Report")
-component_df = component_scores_to_dataframe(component_scores)
-if "robu_status" in component_df.columns:
-    unavailable_statuses = {"offline_fallback", "lookup_unavailable", "network_error", "missing_query"}
-    statuses = set(component_df["robu_status"].dropna().astype(str))
-    if statuses and statuses.issubset(unavailable_statuses):
-        st.warning(
-            "Robu enrichment did not return live product data for this run. "
-            "Keep live lookup enabled, clear the Robu cache, or add exact Robu product links "
-            "in a `supplier_url` / `robu_url` / `product url` BoM column for reliable parsing."
-        )
-st.dataframe(component_df, use_container_width=True, hide_index=True)
-
-st.subheader("PCB Layout Features")
-feature_cols = st.columns(4)
-feature_cols[0].metric("Board area", f"{pcb_features.board_area_mm2 or 0:.1f} mm²")
-feature_cols[1].metric("Layers", pcb_features.layer_count)
-feature_cols[2].metric("Hole / via count", f"{pcb_features.hole_count} / {pcb_features.via_count}")
-feature_cols[3].metric("SMD ratio", f"{pcb_features.smd_ratio:.0%}")
-if pcb_features.warnings:
-    for warning in pcb_features.warnings:
-        st.warning(warning)
-
-st.subheader("Recommendations and Explainability")
-left, right = st.columns(2)
-with left:
-    st.markdown("**Component-level warnings**")
-    for item in component_scores:
-        for rec in item.recommendations[:2]:
-            st.write(f"**{item.part_number}** | {rec.label} | Priority: {rec.priority} | Confidence: {rec.confidence}")
-            st.caption(rec.reason)
-with right:
-    st.markdown("**PCB and recovery warnings**")
-    for rec in pcb_score.recommendations:
-        st.write(f"**{rec.label}** | Priority: {rec.priority} | Confidence: {rec.confidence}")
-        st.caption(rec.reason)
-    st.markdown("**Recovery factors**")
-    for factor in recovery.positive_factors:
-        st.success(factor)
-    for factor in recovery.negative_factors:
-        st.error(factor)
-
-st.subheader("Recoverable Material Estimate")
-materials_df = pd.DataFrame({"material": recovery.materials.keys(), "estimated_value": recovery.materials.values()})
-st.dataframe(materials_df, use_container_width=True, hide_index=True)
-
-st.subheader("Exports")
-download_cols = st.columns(3)
-download_cols[0].download_button("Download CSV", component_csv_bytes(component_scores), "component_sustainability_report.csv", "text/csv")
-download_cols[1].download_button("Download JSON", json.dumps(report, indent=2).encode("utf-8"), "pcb_sustainability_report.json", "application/json")
-download_cols[2].download_button("Download PDF", pdf_report_bytes(report), "pcb_sustainability_report.pdf", "application/pdf")
+    score_block("PCB Image / Layout Score",
