@@ -5,7 +5,6 @@ import sys
 from pathlib import Path
 
 import pandas as pd
-import plotly.graph_objects as go
 import streamlit as st
 
 ROOT = Path(__file__).resolve().parent
@@ -29,27 +28,14 @@ st.set_page_config(
     layout="wide",
 )
 
-# --- FIX: Define absolute cache path so the UI and Scraper use the exact same file ---
+# --- Define absolute cache path so the UI and Scraper use the exact same file ---
 ROBU_CACHE_PATH = ROOT / ".cache" / "robu_results.json"
 
 
-def score_gauge(label: str, value: float):
-    fig = go.Figure(go.Indicator(
-        mode="gauge+number",
-        value=value,
-        title={"text": label},
-        gauge={
-            "axis": {"range": [0, 100]},
-            "bar": {"color": "#2f855a"},
-            "steps": [
-                {"range": [0, 40], "color": "#fed7d7"},
-                {"range": [40, 70], "color": "#fefcbf"},
-                {"range": [70, 100], "color": "#c6f6d5"},
-            ],
-        },
-    ))
-    fig.update_layout(height=220, margin=dict(l=12, r=12, t=36, b=8))
-    st.plotly_chart(fig, use_container_width=True)
+def score_block(label: str, value: float):
+    """Uses native Streamlit components instead of Plotly"""
+    st.metric(label, f"{value:.1f} / 100")
+    st.progress(int(max(0, min(100, round(value)))))
 
 
 def uploaded_suffix(uploaded_file) -> str:
@@ -65,6 +51,7 @@ with st.sidebar:
     gerber_zip = st.file_uploader("Gerber ZIP", type=["zip"])
     placement_file = st.file_uploader("Placement / centroid file", type=["csv", "xlsx", "xls", "json"])
     st.divider()
+    
     online_robu = st.toggle("Enable live Robu.in lookup", value=True)
     enrich_limit = st.number_input("Robu lookup row limit", min_value=1, max_value=100, value=20)
     
@@ -123,7 +110,7 @@ if placement_file:
         st.warning(f"Placement file could not be parsed: {exc}")
 
 with st.spinner("Enriching components and scoring sustainability..."):
-    # --- FIX: Pass explicit cache path, remove invalid browser_fallback parameter ---
+    # Client initialized cleanly with cache synchronization
     client = RobuClient(cache_path=ROBU_CACHE_PATH)
     
     enrichments = client.enrich_bom(bom_df, enabled=online_robu, limit=int(enrich_limit))
@@ -158,11 +145,11 @@ elif enable_ml:
 
 top_cols = st.columns(3)
 with top_cols[0]:
-    score_gauge("BoM Sustainability", bom_summary["summary_score"])
+    score_block("BoM Sustainability", bom_summary["summary_score"])
 with top_cols[1]:
-    score_gauge("PCB Recycling Design", pcb_score.score)
+    score_block("PCB Recycling Design", pcb_score.score)
 with top_cols[2]:
-    score_gauge("Final Recyclability", recovery.final_score)
+    score_block("Final Recyclability", recovery.final_score)
 
 st.subheader("Component Sustainability Report")
 component_df = component_scores_to_dataframe(component_scores)
