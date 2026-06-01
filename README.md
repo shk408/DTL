@@ -1,18 +1,17 @@
 # AI-Assisted Design Optimization for PCBs and Sustainable Electronics
 
-This is a final-year engineering project prototype for evaluating PCB and electronics sustainability during the design phase. It analyzes a Bill of Materials, parses Gerber ZIP packages, optionally enriches components from Robu.in, estimates end-of-life material recovery, and produces an explainable recyclability score from 0 to 100.
+This is a final-year engineering project prototype for evaluating PCB and electronics sustainability during the design phase. It analyzes a Bill of Materials, analyzes PCB images or layout screenshots, optionally enriches components from Robu.in, estimates end-of-life material recovery, and produces an explainable recyclability score from 0 to 100.
 
 ## Features
 
 - BoM ingestion from CSV, Excel, or JSON.
 - Component-level scoring for toxicity, recyclability, repairability, restricted substance risk, sourcing availability, obsolescence, and greener alternatives.
-- Gerber ZIP analysis for board size, layer count, copper estimate, drill count, via density, component density, SMD ratio, edge placement, and disassembly difficulty.
-- Optional placement/centroid file support.
+- PCB image/layout analysis for approximate board size, component density, layer complexity, edge placement, and disassembly difficulty.
 - Robu.in enrichment layer with fuzzy search query creation, local cache, offline fallback, availability metadata, and a modular client design for future suppliers.
 - Optional ML-assisted component scoring using a trainable TF-IDF regression model.
 - End-of-life recovery estimate for copper, contacts, solder, FR4, plastics, metals, and batteries.
 - Streamlit UI with uploads, manual PCB fallback fields, explanations, and CSV/JSON/PDF exports.
-- Unit tests for ingestion, scoring, Gerber parsing, and recovery estimation.
+- Unit tests for ingestion, scoring, PCB image/layout parsing, and recovery estimation.
 
 ## Project Structure
 
@@ -24,11 +23,10 @@ This is a final-year engineering project prototype for evaluating PCB and electr
 ├── README.md
 ├── samples/
 │   ├── sample_bom.csv
-│   ├── sample_placement.csv
-│   └── demo_gerbers/
+│   └── pcb_layout_demo.png
 ├── src/pcb_sustainability/
 │   ├── export.py
-│   ├── gerber.py
+│   ├── image_layout.py
 │   ├── ingestion.py
 │   ├── models.py
 │   ├── recommendations.py
@@ -74,27 +72,14 @@ Recommended steps:
 
 Live Robu.in lookup may depend on the hosting provider's outbound network policy. The app still works with offline fallback enrichment when live lookup is disabled.
 
-Browser-based fallback is optional and uses Playwright when installed. If you want to use it locally, install the package and browser runtime first:
-
-```powershell
-pip install playwright
-playwright install chromium
-```
-
-The app will automatically continue with non-browser fallback paths when Playwright is unavailable.
-
-To create the sample Gerber ZIP for upload:
-
-```powershell
-Compress-Archive -Path samples\demo_gerbers\* -DestinationPath samples\demo_gerbers.zip -Force
-```
+The included `samples/pcb_layout_demo.png` file can be used for quick demos.
 
 ## Example Usage
 
 1. Start the Streamlit app.
 2. Upload `samples/sample_bom.csv`.
-3. Upload `samples/sample_placement.csv`.
-4. Create and upload `samples/demo_gerbers.zip`, or use manual PCB fallback values.
+3. Upload `samples/pcb_layout_demo.png`.
+4. Create and upload `samples/pcb_layout_demo.png`, or use manual PCB fallback values.
 5. Keep live Robu.in lookup disabled for offline demos, or enable it when internet access is available.
 6. Click **Analyze design** and export the CSV, JSON, or PDF report.
 
@@ -145,7 +130,7 @@ Robu.in may return bot-protection pages to automated Python requests. The integr
 - If the BoM contains a `supplier_url`, `product url`, `robu url`, `url`, or `link` column with a Robu product URL, parse that product page directly.
 - Otherwise try direct Robu.in search using the part number, manufacturer, description, value, and footprint/package fields.
 - Search terms are expanded for both SMD and through-hole parts, including 0603/0805/QFN/SOT/BGA, THT, through-hole, DIP, axial, radial, pin headers, JST connectors, and terminal blocks.
-- If Robu blocks direct search, try a public Robu page reader.
+- If Robu blocks direct search, try a public Robu page reader or rely on the offline seed catalog.
 - If search pages still do not expose product links, use a Robu-scoped URL discovery fallback (`site:robu.in/product ...`) and then parse the discovered Robu product page.
 - If all live discovery fails, return structured fallback data, with match confidence and status labels.
 
@@ -157,10 +142,4 @@ This makes arbitrary component lookup best-effort without pretending there is a 
 
 ## Notes
 
-The Gerber parser is a practical prototype parser, not a certified CAM validation tool. It extracts measurable features from common RS-274X and Excellon text files and reports warnings when data is missing. This is intentional: the tool should be honest about uncertainty instead of faking design intelligence.
-
-
-## Fast Mode Changes
-- Removed Playwright from default dependencies.
-- Removed Plotly from default dependencies.
-- Intended for cached/offline supplier enrichment and coursework demos.
+The PCB image/layout parser is a practical prototype parser, not a certified CAM validation tool. It extracts measurable features from uploaded board images or layout screenshots and reports warnings when the image is ambiguous or low contrast. This is intentional: the tool should be honest about uncertainty instead of faking design intelligence.

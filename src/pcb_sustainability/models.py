@@ -38,7 +38,7 @@ class ComponentScore:
 
 @dataclass
 class PCBFeatures:
-    """Features extracted from Gerbers, drill files, placement files, or manual input."""
+    """Features extracted from PCB images, layout screenshots, placement files, or manual input."""
 
     board_width_mm: float | None = None
     board_height_mm: float | None = None

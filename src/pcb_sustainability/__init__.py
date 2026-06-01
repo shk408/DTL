@@ -3,8 +3,12 @@
 __all__ = [
     "ingestion",
     "scoring",
-    "gerber",
+    "image_layout",
     "recycling",
     "recommendations",
     "robu",
+    "ml",
+    "export",
+    "models",
+    "utils",
 ]

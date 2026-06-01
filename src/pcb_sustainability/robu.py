@@ -231,75 +231,16 @@ class RobuClient:
         return fallback
 
     def _browser_search(self, query: str) -> dict:
-        if not self.browser_fallback:
-            return self._browser_unavailable(query)
-
-        search_url = f"https://robu.in/?s={quote_plus(query)}&post_type=product"
-        try:
-            from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
-            from playwright.sync_api import sync_playwright
-        except Exception as exc:  # pragma: no cover - optional dependency
-            return self._browser_error(query, search_url, f"Playwright unavailable: {exc}")
-
-        try:
-            with sync_playwright() as p:
-                browser = p.chromium.launch(headless=True)
-                page = browser.new_page(user_agent=USER_AGENT)
-                page.goto(search_url, wait_until="domcontentloaded", timeout=self.timeout * 1000)
-                html = page.content()
-                soup = BeautifulSoup(html, "html.parser")
-                link_el = soup.select_one('a[href*="/product/"]')
-                product_url = ""
-                if link_el and link_el.get("href"):
-                    product_url = urljoin("https://robu.in/", link_el.get("href"))
-                if product_url:
-                    page.goto(product_url, wait_until="domcontentloaded", timeout=self.timeout * 1000)
-                    html = page.content()
-                    browser.close()
-                    result = self._parse_product_html(query, product_url, html)
-                    result["status"] = "ok_browser_search"
-                    result["search_url"] = search_url
-                    return result
-                browser.close()
-                result = self._parse_product_html(query, search_url, html)
-                result["status"] = "browser_search_no_product"
-                result["search_url"] = search_url
-                return result
-        except PlaywrightTimeoutError as exc:
-            return self._browser_error(query, search_url, f"Browser timeout: {exc}")
-        except Exception as exc:  # pragma: no cover - browser runtime issues
-            return self._browser_error(query, search_url, f"Browser lookup failed: {exc}")
+        return self._browser_unavailable(query)
 
     def _browser_product(self, query: str, product_url: str) -> dict:
-        if not self.browser_fallback:
-            return self._browser_unavailable(query)
-
-        try:
-            from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
-            from playwright.sync_api import sync_playwright
-        except Exception as exc:  # pragma: no cover - optional dependency
-            return self._browser_error(query, product_url, f"Playwright unavailable: {exc}")
-
-        try:
-            with sync_playwright() as p:
-                browser = p.chromium.launch(headless=True)
-                page = browser.new_page(user_agent=USER_AGENT)
-                page.goto(product_url, wait_until="domcontentloaded", timeout=self.timeout * 1000)
-                html = page.content()
-                browser.close()
-                result = self._parse_product_html(query, product_url, html)
-                result["status"] = "ok_browser_product"
-                return result
-        except PlaywrightTimeoutError as exc:
-            return self._browser_error(query, product_url, f"Browser timeout: {exc}")
-        except Exception as exc:  # pragma: no cover - browser runtime issues
-            return self._browser_error(query, product_url, f"Browser lookup failed: {exc}")
+        return self._browser_unavailable(query)
 
     def _browser_unavailable(self, query: str) -> dict:
-        return self._fallback_result(query, "browser_unavailable", "Browser fallback disabled")
+        return self._fallback_result(query, "browser_unavailable", "Browser fallback removed in fast mode")
 
     def _browser_error(self, query: str, source_url: str, message: str) -> dict:
-        result = self._fallback_result(query, "browser_error", "Browser fallback failed")
+        result = self._fallback_result(query, "browser_error", "Browser fallback removed in fast mode")
         result["error"] = message
         result["source_url"] = source_url
         return result
