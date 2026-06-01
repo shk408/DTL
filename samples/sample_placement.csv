@@ -1,0 +1,9 @@
+reference,x_mm,y_mm,side,package,rotation
+U1,38,25,Top,SMD Module,0
+U2,22,18,Top,QFN-16,90
+J1,5,25,Top,Through-hole connector,180
+BAT1,68,25,Top,DIP battery holder,0
+R1,30,15,Top,0603,0
+R2,33,15,Top,0603,0
+C1,36,15,Top,0805,0
+C2,39,15,Top,0805,0

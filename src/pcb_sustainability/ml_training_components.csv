@@ -1,0 +1,19 @@
+part_number,value,footprint,manufacturer,description,quantity,material,compliance,lifecycle,target_score
+RC0805-10K,10k,0805,Yageo,RoHS resistor easy rework,20,Ceramic metal film,RoHS,Active,88
+RC0603-1K,1k,0603,Vishay,Small SMD resistor lead free,15,Ceramic metal film,RoHS,Active,76
+C0805-10UF,10uF,0805,Murata,MLCC capacitor lead free,8,Ceramic nickel tin,RoHS,Active,78
+USB-C-THT,USB-C,Through-hole connector,Generic,Serviceable connector with steel shell,2,Steel plastic copper,RoHS,Active,84
+HEADER-2P,2 pin,Through-hole header,Generic,Modular repairable pin header,4,Plastic copper,RoHS,Active,86
+ESP32-MODULE,WiFi,SMD module,Espressif,Wireless microcontroller module RoHS,1,FR4 copper silicon,RoHS,Active,68
+QFN-MCU,MCU,QFN-32,Generic,Small QFN microcontroller hard to replace,1,Silicon copper,RoHS,Active,54
+BGA-CPU,Processor,BGA,Generic,BGA processor underfill difficult to desolder,1,Silicon copper epoxy,RoHS,Active,32
+PVC-WIRE,Wire,Harness,Generic,PVC insulated cable assembly,3,PVC copper,Unknown,Active,42
+LEADED-SOLDER,Solder,Consumable,Generic,Lead solder alloy,1,Lead tin,Unknown,Active,18
+CR2032-CELL,3V,Coin cell,Generic,Lithium coin cell battery,1,Lithium metal,RoHS,Active,38
+BAT-HOLDER,3V,DIP,Generic,Socketed coin cell holder easy removal,1,Plastic steel,RoHS,Active,74
+CADMIUM-SENSOR,Sensor,SMD,Generic,Cadmium sensor restricted substance,1,Cadmium silicon,Unknown,Active,20
+RELAY-THT,5V,Through-hole relay,Omron,Serviceable relay through hole,1,Copper plastic steel,RoHS,Active,70
+OBSOLETE-REG,5V,QFN-16,Generic,Discontinued NRND voltage regulator,1,Silicon copper,Unknown,NRND,28
+ALU-HEATSINK,Heatsink,Screw mount,Generic,Reusable aluminum heatsink screw mounted,1,Aluminum,RoHS,Active,92
+SHIELD-CAN,RF shield,SMD,Generic,Soldered shield can blocks access,1,Steel tin,RoHS,Active,52
+POTTED-MODULE,Module,Potted,Generic,Potted power module not repairable,1,Epoxy copper silicon,RoHS,Active,24

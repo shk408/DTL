@@ -1,0 +1,8 @@
+part_number,value,footprint,manufacturer,description,quantity,material,compliance,lifecycle,reference
+ESP32-WROOM-32,WiFi MCU Module,SMD Module,Espressif,ESP32 wireless microcontroller module,1,FR4 copper silicon,RoHS,Active,U1
+RC0603FR-0710KL,10k,0603,Yageo,10k resistor 0603,12,Ceramic metal film,RoHS,Active,R1 R2 R3
+CL21A106KAYNNNE,10uF,0805,Samsung,MLCC capacitor 10uF 25V,6,Ceramic nickel tin,RoHS,Active,C1 C2
+USB-C-16PIN,USB-C,Through-hole connector,Generic,USB Type C connector through-hole shell,1,Steel plastic copper,RoHS,Active,J1
+BAT-HOLDER-CR2032,3V,DIP battery holder,Generic,CR2032 lithium coin cell holder,1,Plastic metal lithium,RoHS,Active,BAT1
+QFN-REG-5V,5V regulator,QFN-16,Generic,Small QFN voltage regulator possible NRND,1,Silicon copper,Unknown,NRND,U2
+PVC-WIRE-2PIN,2 pin,Wire harness,Generic,PVC insulated cable assembly,1,PVC copper,Unknown,Active,W1

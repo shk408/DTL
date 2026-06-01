@@ -1,0 +1,62 @@
+[
+  {
+    "keywords": ["10k", "resistor", "1206", "0805", "0603", "ohm"],
+    "title": "10k Ohm 1/4W 1206 Surface Mount Chip Resistor",
+    "category": "Film Resistors",
+    "manufacturer": "Generic",
+    "package": "1206",
+    "availability": "In stock",
+    "price": "Rs 0.69",
+    "source_url": "https://robu.in/product/10k-ohm-1-4w-1206-surface-mount-chip-resistor-pack-of-100/"
+  },
+  {
+    "keywords": ["esp32", "wroom", "wifi", "bluetooth", "module", "development"],
+    "title": "ESP32-WROOM-32E Development Board Module for Arduino",
+    "category": "IoT Development Boards",
+    "manufacturer": "Espressif",
+    "package": "Module",
+    "availability": "In stock",
+    "price": "",
+    "source_url": "https://robu.in/product/esp32-wroom-32e-development-board-module-for-arduino/"
+  },
+  {
+    "keywords": ["esp", "wroom", "32", "wifi", "bluetooth", "networking"],
+    "title": "ESP-WROOM-32 WIFI Bluetooth Networking Smart Component Development Board",
+    "category": "IoT Development Boards",
+    "manufacturer": "Espressif",
+    "package": "Module",
+    "availability": "In stock",
+    "price": "Rs 327.00",
+    "source_url": "https://stg.robu.in/product/esp-wroom-32-wifi-bluetooth-networking-smart-component-development-board/"
+  },
+  {
+    "keywords": ["usb", "type-c", "type", "connector", "16pin", "16", "female", "socket"],
+    "title": "USB 3.1 Type-C Female Jack Socket Connector",
+    "category": "Multi-Brand Electronic Components Kits",
+    "manufacturer": "Generic",
+    "package": "16-pin DIP",
+    "availability": "Out of stock",
+    "price": "Rs 649.00",
+    "source_url": "https://robu.in/product/usb-3-1-type-c-female-jack-socket-connector/"
+  },
+  {
+    "keywords": ["cr2032", "battery", "holder", "coin", "cell", "button"],
+    "title": "20MM CR2032 Battery Button Cell Holder",
+    "category": "Battery Pack Accessories & Holders",
+    "manufacturer": "Generic",
+    "package": "Battery holder",
+    "availability": "Available status not shown",
+    "price": "",
+    "source_url": "https://robu.in/product/20mm-cr2032-battery-button-cell-holder"
+  },
+  {
+    "keywords": ["ams1117", "1117", "5v", "regulator", "sot-223", "voltage"],
+    "title": "AMS1117 5V Low Dropout Voltage Regulator",
+    "category": "Voltage Regulators",
+    "manufacturer": "Generic",
+    "package": "SOT-223",
+    "availability": "Available status not shown",
+    "price": "",
+    "source_url": "https://robu.in/wp-content/uploads/2017/06/AMS1117-datasheet.pdf"
+  }
+]
