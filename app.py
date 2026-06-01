@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 import pandas as pd
+import plotly.graph_objects as go
 import streamlit as st
 
 ROOT = Path(__file__).resolve().parent
@@ -13,8 +14,8 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from pcb_sustainability.export import build_json_report, component_csv_bytes, pdf_report_bytes
-from pcb_sustainability.image_layout import merge_manual_features, parse_pcb_image, score_pcb
-from pcb_sustainability.ingestion import load_bom
+from pcb_sustainability.gerber import merge_manual_features, parse_gerber_zip, score_pcb
+from pcb_sustainability.ingestion import load_bom, load_placement
 from pcb_sustainability.ml import apply_ml_predictions, predict_bom, train_predictor_from_csv
 from pcb_sustainability.models import PCBFeatures
 from pcb_sustainability.recycling import estimate_recovery
@@ -28,10 +29,27 @@ st.set_page_config(
     layout="wide",
 )
 
+# --- FIX: Define absolute cache path so the UI and Scraper use the exact same file ---
+ROBU_CACHE_PATH = ROOT / ".cache" / "robu_results.json"
 
-def score_block(label: str, value: float):
-    st.metric(label, f"{value:.1f} / 100")
-    st.progress(int(max(0, min(100, round(value)))))
+
+def score_gauge(label: str, value: float):
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=value,
+        title={"text": label},
+        gauge={
+            "axis": {"range": [0, 100]},
+            "bar": {"color": "#2f855a"},
+            "steps": [
+                {"range": [0, 40], "color": "#fed7d7"},
+                {"range": [40, 70], "color": "#fefcbf"},
+                {"range": [70, 100], "color": "#c6f6d5"},
+            ],
+        },
+    ))
+    fig.update_layout(height=220, margin=dict(l=12, r=12, t=36, b=8))
+    st.plotly_chart(fig, use_container_width=True)
 
 
 def uploaded_suffix(uploaded_file) -> str:
@@ -39,19 +57,15 @@ def uploaded_suffix(uploaded_file) -> str:
 
 
 st.title("AI-Assisted Design Optimization for PCBs and Sustainable Electronics")
-st.caption(
-    "Analyze BoM sustainability, PCB image/layout complexity, Robu.in availability, and end-of-life recovery in one fast demo workflow."
-)
-
-# Define an absolute cache path so the UI and Scraper look at the exact same folder
-ROBU_CACHE_PATH = ROOT / ".cache" / "robu_results.json"
+st.caption("Analyze BoM sustainability, PCB design-for-recycling, Robu.in availability, and end-of-life recovery in one demo-ready workflow.")
 
 with st.sidebar:
     st.header("Inputs")
     bom_file = st.file_uploader("BoM file", type=["csv", "xlsx", "xls", "json"])
-    pcb_image = st.file_uploader("PCB image / layout screenshot", type=["png", "jpg", "jpeg", "webp"])
+    gerber_zip = st.file_uploader("Gerber ZIP", type=["zip"])
+    placement_file = st.file_uploader("Placement / centroid file", type=["csv", "xlsx", "xls", "json"])
     st.divider()
-    online_robu = st.toggle("Enable live Robu.in lookup", value=False)
+    online_robu = st.toggle("Enable live Robu.in lookup", value=True)
     enrich_limit = st.number_input("Robu lookup row limit", min_value=1, max_value=100, value=20)
     
     if st.button("Clear Robu lookup cache", use_container_width=True):
@@ -60,14 +74,16 @@ with st.sidebar:
         st.success("Robu lookup cache cleared.")
         
     if not online_robu:
-        st.info("Live Robu lookup is off. Availability and price will use offline fallback data.")
+        st.warning("Live Robu lookup is off. Availability and price will use offline fallback data.")
     st.divider()
+    
     st.subheader("ML scoring")
     enable_ml = st.toggle("Enable ML-assisted scoring", value=False)
     ml_blend = st.slider("ML blend weight", min_value=0.0, max_value=0.5, value=0.25, step=0.05)
     ml_training_file = st.file_uploader("Optional ML training CSV", type=["csv"])
     st.caption("Training CSV must include component fields and `target_score` from 0 to 100.")
     st.divider()
+    
     st.subheader("Manual PCB fallback")
     manual = {
         "board_width_mm": st.number_input("Board width (mm)", min_value=0.0, value=80.0),
@@ -86,7 +102,7 @@ with st.sidebar:
 run = st.button("Analyze design", type="primary", use_container_width=True)
 
 if not run:
-    st.info("Upload a BoM and optionally a PCB image/layout screenshot, then run the analysis. Sample files are included in the `samples` folder.")
+    st.info("Upload a BoM and optionally a Gerber ZIP or placement file, then run the analysis. Sample files are included in the `samples` folder.")
     st.stop()
 
 if not bom_file:
@@ -99,18 +115,15 @@ except Exception as exc:
     st.error(f"Could not parse BoM: {exc}")
     st.stop()
 
-with st.spinner("Analyzing PCB image and scoring sustainability..."):
-    if pcb_image:
-        try:
-            pcb_features = parse_pcb_image(pcb_image)
-        except Exception as exc:
-            pcb_features = PCBFeatures(warnings=[f"PCB image could not be parsed: {exc}"])
-    else:
-        pcb_features = PCBFeatures(warnings=["No PCB image uploaded; PCB score uses manual fallback values."])
+placement_df = None
+if placement_file:
+    try:
+        placement_df = load_placement(placement_file, uploaded_suffix(placement_file))
+    except Exception as exc:
+        st.warning(f"Placement file could not be parsed: {exc}")
 
-    pcb_features = merge_manual_features(pcb_features, manual)
-
-    # FIX: Explicitly pass synchronized cache path, and remove the non-existent browser_fallback argument
+with st.spinner("Enriching components and scoring sustainability..."):
+    # --- FIX: Pass explicit cache path, remove invalid browser_fallback parameter ---
     client = RobuClient(cache_path=ROBU_CACHE_PATH)
     
     enrichments = client.enrich_bom(bom_df, enabled=online_robu, limit=int(enrich_limit))
@@ -125,9 +138,19 @@ with st.spinner("Analyzing PCB image and scoring sustainability..."):
         except Exception as exc:
             ml_error = str(exc)
 
+if gerber_zip:
+    try:
+        pcb_features = parse_gerber_zip(gerber_zip, placement_df)
+    except Exception as exc:
+        pcb_features = PCBFeatures(warnings=[f"Gerber ZIP could not be parsed: {exc}"])
+else:
+    pcb_features = PCBFeatures(warnings=["No Gerber ZIP uploaded; PCB score uses manual fallback values."])
+
+pcb_features = merge_manual_features(pcb_features, manual)
 pcb_score = score_pcb(pcb_features)
 recovery = estimate_recovery(component_scores, pcb_features, pcb_score)
 report = build_json_report(component_scores, bom_summary, pcb_features, pcb_score, recovery)
+
 if enable_ml and ml_error:
     st.warning(f"ML scoring was skipped: {ml_error}")
 elif enable_ml:
@@ -135,15 +158,11 @@ elif enable_ml:
 
 top_cols = st.columns(3)
 with top_cols[0]:
-    score_block("BoM Sustainability", bom_summary["summary_score"])
+    score_gauge("BoM Sustainability", bom_summary["summary_score"])
 with top_cols[1]:
-    score_block("PCB Image / Layout Score", pcb_score.score)
+    score_gauge("PCB Recycling Design", pcb_score.score)
 with top_cols[2]:
-    score_block("Final Recyclability", recovery.final_score)
-
-if pcb_image:
-    st.subheader("PCB Image Preview")
-    st.image(pcb_image, use_container_width=True)
+    score_gauge("Final Recyclability", recovery.final_score)
 
 st.subheader("Component Sustainability Report")
 component_df = component_scores_to_dataframe(component_scores)
@@ -153,14 +172,14 @@ if "robu_status" in component_df.columns:
     if statuses and statuses.issubset(unavailable_statuses):
         st.warning(
             "Robu enrichment did not return live product data for this run. "
-            "Keep live lookup enabled, clear the Robu cache, or add exact Robu product links "
+            "Make sure live lookup is enabled, clear the Robu cache, or add exact Robu product links "
             "in a `supplier_url` / `robu_url` / `product url` BoM column for reliable parsing."
         )
 st.dataframe(component_df, use_container_width=True, hide_index=True)
 
 st.subheader("PCB Layout Features")
 feature_cols = st.columns(4)
-feature_cols[0].metric("Board area", f"{pcb_features.board_area_mm2 or 0:.1f} mm²")
+feature_cols[0].metric("Board area", f"{pcb_features.board_area_mm2 or 0:.1f} mm2")
 feature_cols[1].metric("Layers", pcb_features.layer_count)
 feature_cols[2].metric("Hole / via count", f"{pcb_features.hole_count} / {pcb_features.via_count}")
 feature_cols[3].metric("SMD ratio", f"{pcb_features.smd_ratio:.0%}")
